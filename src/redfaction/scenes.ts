@@ -340,7 +340,7 @@ const sceneDescs = [
 	new SceneDesc(`L4S4`, `L4S4`, `levels1`),
 	new SceneDesc(`L4S5`, `L4S5`, `levels1`),
 	new SceneDesc(`L5S1`, `L5S1`, `levels1`),
-	new SceneDesc(`L5SS2`, `L5SS2`, `levels1`),
+	new SceneDesc(`L5S2`, `L5S2`, `levels1`),
 	new SceneDesc(`L5S3`, `L5S3`, `levels1`),
 	new SceneDesc(`L5S4`, `L5S4`, `levels1`),
 	new SceneDesc(`L6S1`, `L6S1`, `levels1`),
@@ -407,14 +407,14 @@ const sceneDescs = [
 	new SceneDesc(`dm08`, `dm08`, `levelsm`),
 	new SceneDesc(`dm09`, `dm09`, `levelsm`),
 	new SceneDesc(`dm10`, `dm10`, `levelsm`),
-	new SceneDesc(`dm11`, `dm11`, `levelsm`),
+	//new SceneDesc(`dm11`, `dm11`, `levelsm`), //need to grab a copy
 	new SceneDesc(`dm12`, `dm12`, `levelsm`),
 	new SceneDesc(`dm13`, `dm13`, `levelsm`),
 	new SceneDesc(`dm14`, `dm14`, `levelsm`),
 	new SceneDesc(`dm15`, `dm15`, `levelsm`),
 	new SceneDesc(`dm16`, `dm16`, `levelsm`),
 	new SceneDesc(`dm17`, `dm17`, `levelsm`),
-	new SceneDesc(`dm18`, `dm18`, `levelsm`),
+	//new SceneDesc(`dm18`, `dm18`, `levelsm`), //need to grab a copy
 	new SceneDesc(`dm19`, `dm19`, `levelsm`),
 	new SceneDesc(`dm20`, `dm20`, `levelsm`),
 
