@@ -4,7 +4,8 @@ show water surface instead of default texture
 animated water surface?  
 actually fix transparent sort order  
 lighting on mover brushes has issues  
-skybox scaling might be a little bit off?
+skybox scaling might be a little bit off?  
+skyboxes with multiple brushes aren't fully grabbed (CTF01 and a few other multiplayer levels, not sure if there are any broken in singleplayer)  
 
 improve entities (make them not t-pose ??? no idea if there's a system in place for manipulating bones/groups of vertices)  
 use entity skins  
