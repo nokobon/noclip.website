@@ -309,7 +309,7 @@ class RedFactionMapDataInstance {
     public hideInvisible = true;
     private isSkybox = false;
 
-    constructor(device: GfxDevice, renderInstBuilder: GfxRenderInstBuilder, private rooms: RFL.RF1Rooms | RFL.RF1Brush, textureHolder: TEXTextureHolder, public mapData: RedFactionMapData, private desiredTexture: number, private lightmaps: boolean, lmapIdx: number, private isMover: boolean, private desiredRoom: number) {
+    constructor(device: GfxDevice, renderInstBuilder: GfxRenderInstBuilder, private rooms: RFL.RF1Rooms | RFL.RF1Brush, textureHolder: TEXTextureHolder, public mapData: RedFactionMapData, private desiredTexture: number, private lightmaps: boolean, lmapIdx: number, private isMover: boolean, private desiredRoom: number, private skyroomAABB: AABB) {
         this.renderInst = renderInstBuilder.pushRenderInst();
         this.renderInst.inputState = this.mapData.inputState;
         const cullMode = GfxCullMode.FRONT //todo: figure out what front/back vert order is ??? probably doesnt really matter
@@ -323,8 +323,13 @@ class RedFactionMapDataInstance {
             //stencilCompare: GfxCompareMode.,
         });
 
-        if (desiredRoom >= 0 && !this.isMover && (this.rooms as RFL.RF1Rooms).rooms[this.desiredRoom].skyRoom !== 0)
-            this.isSkybox = true
+        if (desiredRoom >= 0 && !this.isMover) {
+            const roomInfo = (this.rooms as RFL.RF1Rooms).rooms[this.desiredRoom]
+            if (roomInfo.skyRoom !== 0)
+                this.isSkybox = true
+            if (roomInfo.subRoom !== 0 && AABB.intersect(roomInfo.aabb, skyroomAABB))
+                this.isSkybox = true
+        }
         
         // TODO(jstpierre): Which render flags to use?
         renderInstBuilder.newUniformBufferInstance(this.renderInst, RedFactionProgram.ub_MeshFragParams);
@@ -421,8 +426,8 @@ class RedFactionMapDataInstance {
         this.renderInst.setDeviceProgram(program);
     }
 
-    private computeModelMatrix(camera: Camera, modelMatrix: mat4, skybox: boolean = false): mat4 {
-        if (skybox)
+    private computeModelMatrix(camera: Camera, modelMatrix: mat4): mat4 {
+        if (this.isSkybox)
             computeViewMatrixSkybox(scratchMat4, camera);
         else
             computeViewMatrix(scratchMat4, camera);
@@ -441,8 +446,8 @@ class RedFactionMapDataInstance {
             mat4.mul(scratchMat4, scratchMat4, scratchMat4a) //apply rot mat
         }
 
-        if (skybox) {
-            (this.rooms as RFL.RF1Rooms).rooms[this.desiredRoom].aabb.centerPoint(scratchVec3)
+        if (this.isSkybox) {
+            this.skyroomAABB.centerPoint(scratchVec3)
             vec3.mul(scratchVec3, scratchVec3, vec3.fromValues(GLOBAL_SCALE, -GLOBAL_SCALE, -GLOBAL_SCALE))
             mat4.translate(scratchMat4, scratchMat4, scratchVec3); //move skybox to origin
         }
@@ -468,7 +473,7 @@ class RedFactionMapDataInstance {
             this.renderInst.passMask = this.isSkybox ? RFPass.SKYBOX : RFPass.MAIN
             let offs = this.renderInst.getUniformBufferOffset(RedFactionProgram.ub_MeshFragParams);
             const mapped = meshFragParamsBuffer.mapBufferF32(offs, 13);
-            offs += fillMatrix4x3(mapped, offs, this.computeModelMatrix(viewRenderer.camera, this.modelMatrix, this.isSkybox));
+            offs += fillMatrix4x3(mapped, offs, this.computeModelMatrix(viewRenderer.camera, this.modelMatrix));
             mapped[offs++] = Math.floor(((viewRenderer.time / 1000) * this.animFps) % this.animFct) //u_AnimFrame
         }
     }
@@ -663,15 +668,21 @@ export class SceneRenderer {
         const moverSects: RFL.RF1Movers[] = rflData.filter((sect) => sect.type === RFL.RFLSections.MOVERS) as RFL.RF1Movers[]
 
         let mapDataOffs = 0;
+
+        let skyroomAABB = new AABB()
         
         for (let sgOff = 0; sgOff < staticGeoSects.length; sgOff++) {
             const rooms = staticGeoSects[sgOff]
             const lightmaps = sgOff < lightmapSects.length
+            for (let room of rooms.rooms) {
+                if (room.skyRoom !== 0)
+                    skyroomAABB = room.aabb
+            }
             for (let room = 0; room < rooms.roomCount; room++) {
                 for (let i = 0; i < rooms.textureCount; i++) {
                     this.mapDatas.push(new RedFactionMapData(device, rooms, i, rooms.unknownLightmaps, room));
                     if (this.mapDatas[mapDataOffs].indexBufferCount > 0)
-                        this.mapDataInstances.push(new RedFactionMapDataInstance(device, this.renderInstBuilder, rooms, textureHolder, this.mapDatas[mapDataOffs], i, lightmaps, sgOff, false, room));
+                        this.mapDataInstances.push(new RedFactionMapDataInstance(device, this.renderInstBuilder, rooms, textureHolder, this.mapDatas[mapDataOffs], i, lightmaps, sgOff, false, room, skyroomAABB));
                     mapDataOffs++
                 }
             }
@@ -686,7 +697,7 @@ export class SceneRenderer {
                 for (let i = 0; i < mover.textureCount; i++) {
                     this.mapDatas.push(new RedFactionMapData(device, mover, i, staticGeoSects[0].unknownLightmaps, -4.20))
                     if (this.mapDatas[mapDataOffs].indexBufferCount > 0)
-                        this.mapDataInstances.push(new RedFactionMapDataInstance(device, this.renderInstBuilder, mover, textureHolder, this.mapDatas[mapDataOffs], i, lightmaps, r, true, -4.20))
+                        this.mapDataInstances.push(new RedFactionMapDataInstance(device, this.renderInstBuilder, mover, textureHolder, this.mapDatas[mapDataOffs], i, lightmaps, r, true, -4.20, skyroomAABB))
                     mapDataOffs++
                 }
             }
